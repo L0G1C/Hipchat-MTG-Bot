@@ -14,7 +14,7 @@ namespace Hip_Chat_Mtg_Bot
     class Program
     {
         //var apiKey = "c7d2ef15f55d05ea84da26925f3bd8";
-        static string regexPattern = @"^{{(.+)}}$";        
+        static string regexPattern = @"^{{(.+?)}}$";        
 
         static void Main(string[] args)
         {
