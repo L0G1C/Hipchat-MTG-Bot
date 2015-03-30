@@ -14,13 +14,14 @@ namespace Hip_Chat_Mtg_Bot
     class Program
     {
         //var apiKey = "c7d2ef15f55d05ea84da26925f3bd8";
-        static string regexPattern = @"^{{(.+?)}}$";        
+        static string regexPattern = @"{{(.+?)}}";
+        static List<string> excludeList = new List<string>();
 
         static void Main(string[] args)
         {
             
             //View History API call shows last 75 messages. So, I need to call this function over and over. Decided on every 3 seconds
-            Timer t = new Timer(ViewChatHistory, null, 0,3000);
+            Timer t = new Timer(ViewChatHistory, null, 0,4000);
             Console.ReadLine();
         }
 
@@ -35,20 +36,22 @@ namespace Hip_Chat_Mtg_Bot
             string apiKey = "hhJa1dKNwKv9COBhDlg2miyifJzZ63qufiycaB0n";
             HipchatClient client = new HipchatClient(apiKey);
             //client.SendNotification("TestRoom", "Test From MTG Bot", RoomColors.Purple);
-            HipchatViewRoomHistoryResponse history = client.ViewRecentRoomHistory("TestRoom");
+            HipchatViewRoomHistoryResponse history = client.ViewRecentRoomHistory("TestRoom2");
             Regex regEx = new Regex(regexPattern);
             var cardNames = new List<string>();
 
             foreach(var item in history.Items.OrderByDescending(q => q.Date)){
-                if (item.Date.AddSeconds(2) >= DateTime.Now && regEx.IsMatch(item.Message))
+                //if (item.Date.AddSeconds(2) >= DateTime.Now && regEx.IsMatch(item.Message))
+                if (!excludeList.Contains(item.Id))
                 {
 
                     //TODO - This works for ONE card name. Need to update the regex to work for multiple cards in one line
 
-                    var cardName = regEx.Match(item.Message).Groups[1].Value;
+                    var cardName = regEx.Match(item.Message).Value;
                     if (!String.IsNullOrEmpty(cardName))
                     {
-                        client.SendNotification("TestRoom", cardName, RoomColors.Purple);
+                        client.SendNotification("TestRoom2", cardName, RoomColors.Purple);
+                        excludeList.Add(item.Id);
                     }
 
                     
