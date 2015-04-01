@@ -8,6 +8,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using HipchatApiV2;
+using HipchatApiV2.Requests;
 using HipchatApiV2.Responses;
 using HipchatApiV2.Enums;
 using Newtonsoft.Json;
@@ -61,6 +62,8 @@ namespace Hip_Chat_Mtg_Bot
                         if (!String.IsNullOrEmpty(match.Value))
                         {                           
                             excludeList.Add(item.Id);
+                            if(excludeList.Count > 75)
+                                excludeList.RemoveAt(0);
                         }
                     }
                 }
@@ -104,7 +107,7 @@ namespace Hip_Chat_Mtg_Bot
                             if (!String.IsNullOrEmpty(match.Value))
                             {
                                 var cardName = match.Groups[1].Value;
-                                var cardData = GenerateCardData(cardName);
+                                var cardData = GenerateCardData(cardName);                                
 
                                 client.SendNotification(room, cardData, RoomColors.Purple);
                                 excludeList.Add(item.Id);
