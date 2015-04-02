@@ -125,7 +125,7 @@ namespace Hip_Chat_Mtg_Bot
         }
 
         private static string GenerateCardData(string cardName)
-        {
+        {            
             var latestCardSet = cardJson.Values.LastOrDefault(q => q.cards.Any(p => p.name.ToUpper() == cardName.ToUpper()));
 
             if (latestCardSet != null)
@@ -141,7 +141,8 @@ namespace Hip_Chat_Mtg_Bot
                 return html;
             }
 
-            return "Card Not Recognized";
+
+            return "Card Not Recognized. Did you mean?..." + FuzzyMatch.BestMatch(cardName);
 
 
         }
