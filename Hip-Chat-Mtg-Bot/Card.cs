@@ -27,4 +27,24 @@ namespace Hip_Chat_Mtg_Bot
         public string imageName;
     }
 
+    class CardResult : IComparable
+    {
+        public Card card;
+        public int distance;
+
+        public CardResult(Card card, int distance) 
+        {
+            this.card = card; this.distance = distance;
+        }
+
+        public int CompareTo(object obj)
+        {
+            if (obj == null) return 1;
+            CardResult otherResult = obj as CardResult;
+            if (otherResult != null)
+                return this.distance.CompareTo(otherResult.distance);
+            else
+                throw new ArgumentException("Object is not a CardResult");
+        }
+    }
 }

@@ -47,8 +47,16 @@ namespace Hip_Chat_Mtg_Bot
             using (WebClient WebClient = new WebClient())
             {
                 if (File.Exists("AllSets.json"))
-                    File.Delete("AllSets.json");
-                WebClient.DownloadFile("http://mtgjson.com/json/AllSets.json", "AllSets.json");
+                {
+                    if (File.GetCreationTime("AllSets.json") < DateTime.Now.AddDays(-1.0)) { 
+                        File.Delete("AllSets.json");
+                        WebClient.DownloadFile("http://mtgjson.com/json/AllSets.json", "AllSets.json");
+                    }
+                }
+                else
+                {
+                    WebClient.DownloadFile("http://mtgjson.com/json/AllSets.json", "AllSets.json");
+                }
             }
 
             LoadData();
@@ -69,7 +77,7 @@ namespace Hip_Chat_Mtg_Bot
                 }
             }
 
-            client.SendNotification(room, "MTG Bot is Ready!", RoomColors.Green);
+            client.SendNotification(room, "MTG Bot is Ready!<br/>To request a card: {{cardname}}<br/>To search for a card: {{cardname:numresults:numcolumns}}", RoomColors.Green);
         }
 
         private static void LoadData()
@@ -124,20 +132,105 @@ namespace Hip_Chat_Mtg_Bot
 
         }
 
-        private static string GenerateCardData(string cardName)
-        {            
-            var latestCardSet = cardJson.Values.LastOrDefault(q => q.cards.Any(p => p.name.ToUpper() == cardName.ToUpper()));
+        private static string GenerateCardData(string cardData)
+        {
+            string cardName = "";
+            int numResults = 3;
+            int numColumns = 3;
+            int test = 0;
+            int column = 0;
+            Boolean longForm = false;
 
-            if (latestCardSet != null)
+            string[] cd = cardData.Split(new char[] {':'});
+
+            if (cd.Length > 0)
+                cardName = cd[0];
+
+            if (cd.Length > 1)
             {
-                Card card = latestCardSet.cards.Last(c => c.name.ToUpper() == cardName.ToUpper());
+                if (int.TryParse(cd[1], out test)) {
+                    if (test > 0)
+                    {
+                        longForm = true;
+                        numResults = test;
+                    }
+                }
+            }
+
+            if (cd.Length > 2)
+            {
+                if (int.TryParse(cd[2], out test))
+                {
+                    if (test > 0)
+                    {
+                        longForm = true;
+                        numColumns = test;
+                    }
+                }
+            }
+
+            var latestCardSet = cardJson.Values.LastOrDefault(q => q.cards.Any(p => p.name.ToUpper() == cardName.ToUpper()));
+            Card card = null;
+
+            string html;
+
+            if (latestCardSet != null) {
+                card = latestCardSet.cards.Last(c => c.name.ToUpper() == cardName.ToUpper());
+
                 var cardImg = "<img src=\"http://gatherer.wizards.com/Handlers/Image.ashx?multiverseid=" + card.multiverseid + "&amp;type=card\" height=\"200\" width=\"150\">";
 
-                var html =
+                html =
                     string.Format(@"<a href=""http://gatherer.wizards.com/Pages/Card/Details.aspx?name={0}"">{1}</a>
                                     <br />
                                     <a href=""http://gatherer.wizards.com/Pages/Card/Details.aspx?name={0}"">{2}</a>",
                         HttpUtility.UrlEncode(card.name), card.name, cardImg);
+            }
+            else
+            {
+                html = "Exact match not found.  Best Matching card:<br />";
+                card = FuzzyMatch.BestMatch2(cardJson, cardName);
+                var cardImg = String.Format("<img src=\"http://gatherer.wizards.com/Handlers/Image.ashx?multiverseid={0}&amp;type=card\" height=\"200\" width=\"150\">", card.multiverseid);
+
+                html +=
+                    string.Format(@"<a href=""http://gatherer.wizards.com/Pages/Card/Details.aspx?name={0}"">{1}</a>
+                                    <br />
+                                    <a href=""http://gatherer.wizards.com/Pages/Card/Details.aspx?name={0}"">{2}</a>
+                                    <br />",
+                        HttpUtility.UrlEncode(card.name), card.name, cardImg);
+                longForm = true;
+            }
+
+            if(longForm) {
+                CardResult[] cards = FuzzyMatch.FuzzyMatch2(cardJson, cardName, numResults);
+                html += string.Format("Best {0} matches (smaller is better):<br/><table border=0><tr>", numResults);
+                column = 0;
+                while (column < numColumns)
+                {
+                    html += "<td>Name</td><td>Dist</td>";
+                    column += 1;
+                }
+                html += "</tr>";
+                column %= numColumns;
+                html += "<tr>";
+                foreach (CardResult c in cards)
+                {
+                    if (column == 0)
+                        html += "<tr>";
+                    html += string.Format(@"
+                                                <td><a href=""http://gatherer.wizards.com/Pages/Card/Details.aspx?name={0}"">{1}</a></td>
+                                                <td>{2}</td>
+                                            ", HttpUtility.UrlEncode(c.card.name), c.card.name, c.distance);
+                    column += 1;
+                    column %= numColumns;
+                    if (column == 0)
+                        html += "</tr>";
+                }
+                if(column != 0)
+                    html += "</tr>";
+                html += "</table>";
+            }
+
+            if(card != null) {
                 return html;
             }
 
