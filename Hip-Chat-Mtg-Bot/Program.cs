@@ -20,7 +20,13 @@ namespace Hip_Chat_Mtg_Bot
     {
         //var apiKey = "c7d2ef15f55d05ea84da26925f3bd8"; //This is what Matt Lingelbach gave me?
         static string regexPattern = @"{{(.+?)}}";
+
+        /// <summary>
+        /// Change this to name of Test room for teting
+        /// </summary>
         static string room = "MTG";
+
+
         static List<string> excludeList = new List<string>();
         private static bool callfunction = true;
         static Dictionary<string, SetData> cardJson = null;
