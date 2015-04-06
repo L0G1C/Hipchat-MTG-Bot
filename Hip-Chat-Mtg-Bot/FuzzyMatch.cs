@@ -21,19 +21,24 @@ namespace Hip_Chat_Mtg_Bot
             int curDistance = 0;
             string cnu = cardname.ToUpper();
             foreach(SetData set in cardJson.Values) {
-                foreach(Card c in set.cards) {
-                    curDistance = LevenshteinDistance(c.name.ToUpper(), cnu);
-                    isSubstringMatch = c.name.ToUpper().Contains(cnu);
-                    CardResult test = new CardResult(c, curDistance, isSubstringMatch);
-                    if (test.CompareTo(match) < 0)
+                if (standard.Contains<string>(set.code)) {
+                    foreach (Card c in set.cards)
                     {
-                        leastDistance = curDistance;
-                        match = test;
+                        curDistance = LevenshteinDistance(c.name.ToUpper(), cnu);
+                        isSubstringMatch = c.name.ToUpper().Contains(cnu);
+                        CardResult test = new CardResult(c, curDistance, isSubstringMatch);
+                        if (test.CompareTo(match) < 0)
+                        {
+                            leastDistance = curDistance;
+                            match = test;
+                        }
                     }
                 }
             }
             return match.card;
         }
+
+        private static string[] standard = {"DTK", "FRF", "KTK", "M15", "JOU", "BNG", "THS"};
 
         public static CardResult[] FuzzyMatch2(Dictionary<string, SetData> cardJson, string cardname, int numMatches)
         {
@@ -43,22 +48,24 @@ namespace Hip_Chat_Mtg_Bot
             string cnu = cardname.ToUpper();
             foreach (SetData set in cardJson.Values)
             {
-                foreach (Card c in set.cards)
-                {
-                    if (!matches.Any(q => q.card.name == c.name)) {
-                        curDistance = LevenshteinDistance(c.name.ToUpper(), cnu);
-                        isSubStringMatch = c.name.ToUpper().Contains(cnu);
-                        CardResult match = new CardResult(c, curDistance, isSubStringMatch);
-                        if (matches.Count == numMatches) { 
-                            if (match.CompareTo(matches[matches.Count - 1]) < 0)
-                            {
+                if(standard.Contains<string>(set.code)) {
+                    foreach (Card c in set.cards)
+                    {
+                        if (!matches.Any(q => q.card.name == c.name)) {
+                            curDistance = LevenshteinDistance(c.name.ToUpper(), cnu);
+                            isSubStringMatch = c.name.ToUpper().Contains(cnu);
+                            CardResult match = new CardResult(c, curDistance, isSubStringMatch);
+                            if (matches.Count == numMatches) { 
+                                if (match.CompareTo(matches[matches.Count - 1]) < 0)
+                                {
+                                    matches.Add(match);
+                                    matches.Sort();
+                                    matches.RemoveAt(numMatches);
+                                }
+                            } else {
                                 matches.Add(match);
                                 matches.Sort();
-                                matches.RemoveAt(numMatches);
                             }
-                        } else {
-                            matches.Add(match);
-                            matches.Sort();
                         }
                     }
                 }
