@@ -173,6 +173,7 @@ namespace Hip_Chat_Mtg_Bot
             Card card = null;
 
             string html;
+            CardResult[] cards = null;
 
             if (latestCardSet != null) {
                 card = latestCardSet.cards.Last(c => c.name.ToUpper() == cardName.ToUpper());
@@ -188,7 +189,9 @@ namespace Hip_Chat_Mtg_Bot
             else
             {
                 html = "Exact match not found.  Best Matching card:<br />";
-                card = FuzzyMatch.BestMatch2(cardJson, cardName);
+                if (cards == null)
+                    cards = FuzzyMatch.FuzzyMatch2(cardJson, cardName, numResults);
+                card = cards[0].card;
                 var cardImg = String.Format("<img src=\"http://gatherer.wizards.com/Handlers/Image.ashx?multiverseid={0}&amp;type=card\" height=\"200\" width=\"150\">", card.multiverseid);
 
                 html +=
@@ -201,12 +204,13 @@ namespace Hip_Chat_Mtg_Bot
             }
 
             if(longForm) {
-                CardResult[] cards = FuzzyMatch.FuzzyMatch2(cardJson, cardName, numResults);
+                if(cards == null)
+                    cards = FuzzyMatch.FuzzyMatch2(cardJson, cardName, numResults);
                 html += string.Format("Best {0} matches (smaller is better):<br/><table border=0><tr>", numResults);
                 column = 0;
                 while (column < numColumns)
                 {
-                    html += "<td>Name</td><td>Dist</td>";
+                    html += "<td>Name</td><td>Dist</td><td>&nbsp;&nbsp;&nbsp;</td>";
                     column += 1;
                 }
                 html += "</tr>";
@@ -218,7 +222,7 @@ namespace Hip_Chat_Mtg_Bot
                         html += "<tr>";
                     html += string.Format(@"
                                                 <td><a href=""http://gatherer.wizards.com/Pages/Card/Details.aspx?name={0}"">{1}</a></td>
-                                                <td>{2}</td>
+                                                <td>{2}</td><td>&nbsp;</td>
                                             ", HttpUtility.UrlEncode(c.card.name), c.card.name, c.distance);
                     column += 1;
                     column %= numColumns;
@@ -235,7 +239,7 @@ namespace Hip_Chat_Mtg_Bot
             }
 
 
-            return "Card Not Recognized. Did you mean?..." + FuzzyMatch.BestMatch(cardName);
+            return "Card Not Recognized. Did you mean?..." + FuzzyMatch.BestMatch2(cardJson, cardName);
 
 
         }

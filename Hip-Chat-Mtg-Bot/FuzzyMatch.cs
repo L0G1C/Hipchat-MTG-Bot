@@ -8,101 +8,56 @@ using System.Net.Http.Headers;
 
 namespace Hip_Chat_Mtg_Bot
 {
-    public class DataObject
-    {
-        public string name { get; set; }
-        public string id { get; set; }
-        public string url { get; set; }
-        public string store_url { get; set; }
-    }
-
     class FuzzyMatch
     {
         private const int MAXCARDNAME = 256;
-        private const string URL = "http://api.deckbrew.com/mtg/cards";
-
-        private const string urlParameters = "?name={0}";
-
-        public static string[] FuzzyMatches(string cardname)
-        {
-            List<string> myCards = new List<string>();
-            HttpClient client = new HttpClient();
-            client.BaseAddress = new Uri(URL);
-
-            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-
-            HttpResponseMessage response = client.GetAsync(String.Format(urlParameters, cardname)).Result;
-
-            if (response.IsSuccessStatusCode)
-            {
-                var dataObjects = response.Content.ReadAsAsync<IEnumerable<DataObject>>().Result;
-                foreach (var d in dataObjects)
-                {
-                    myCards.Add(d.name);
-                }
-            }
-            return myCards.ToArray();
-        }
-
-        public static string BestMatch(string cardname)
-        {
-            HttpClient client = new HttpClient();
-            client.BaseAddress = new Uri(URL);
-
-            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-
-            HttpResponseMessage response = client.GetAsync(String.Format(urlParameters, cardname)).Result;
-
-            if (response.IsSuccessStatusCode)
-            {
-                var dataObjects = response.Content.ReadAsAsync<IEnumerable<DataObject>>().Result;
-                if (dataObjects.Count<DataObject>() > 0)
-                {
-                    return dataObjects.ElementAt<DataObject>(0).name;
-                }
-            }
-            return "";
-        }
         private static UInt16[,] d = new UInt16[MAXCARDNAME, MAXCARDNAME];
 
         public static Card BestMatch2(Dictionary<string, SetData> cardJson, string cardname)
         {
             int leastDistance = int.MaxValue;
+            bool isSubstringMatch;
+            CardResult match = new CardResult(cardJson.Values.ElementAt<SetData>(0).cards[0], int.MaxValue, false);
             int curDistance = 0;
-            Card match = cardJson.Values.ElementAt<SetData>(0).cards[0];
+            string cnu = cardname.ToUpper();
             foreach(SetData set in cardJson.Values) {
                 foreach(Card c in set.cards) {
-                    curDistance = LevenshteinDistance(c.name.ToUpper(), cardname.ToUpper());
-                    if(curDistance < leastDistance) {
+                    curDistance = LevenshteinDistance(c.name.ToUpper(), cnu);
+                    isSubstringMatch = c.name.ToUpper().Contains(cnu);
+                    CardResult test = new CardResult(c, curDistance, isSubstringMatch);
+                    if (test.CompareTo(match) < 0)
+                    {
                         leastDistance = curDistance;
-                        match = c;
+                        match = test;
                     }
                 }
             }
-            return match;
+            return match.card;
         }
 
         public static CardResult[] FuzzyMatch2(Dictionary<string, SetData> cardJson, string cardname, int numMatches)
         {
             int curDistance;
+            bool isSubStringMatch;
             List<CardResult> matches = new List<CardResult>();
+            string cnu = cardname.ToUpper();
             foreach (SetData set in cardJson.Values)
             {
                 foreach (Card c in set.cards)
                 {
-                    if (!matches.Any(q => q.card.name == c.name)) { 
-                        curDistance = LevenshteinDistance(c.name.ToUpper(), cardname.ToUpper());
+                    if (!matches.Any(q => q.card.name == c.name)) {
+                        curDistance = LevenshteinDistance(c.name.ToUpper(), cnu);
+                        isSubStringMatch = c.name.ToUpper().Contains(cnu);
+                        CardResult match = new CardResult(c, curDistance, isSubStringMatch);
                         if (matches.Count == numMatches) { 
-                            if (curDistance < matches[matches.Count - 1].distance)
+                            if (match.CompareTo(matches[matches.Count - 1]) < 0)
                             {
-                                matches.Add(new CardResult(c, curDistance));
+                                matches.Add(match);
                                 matches.Sort();
                                 matches.RemoveAt(numMatches);
                             }
-                        }
-                        else
-                        {
-                            matches.Add(new CardResult(c, curDistance));
+                        } else {
+                            matches.Add(match);
                             matches.Sort();
                         }
                     }

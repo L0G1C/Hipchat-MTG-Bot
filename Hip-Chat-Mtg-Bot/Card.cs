@@ -32,19 +32,26 @@ namespace Hip_Chat_Mtg_Bot
         public Card card;
         public int distance;
 
-        public CardResult(Card card, int distance) 
+        public bool substringMatch;
+
+        public CardResult(Card card, int distance, bool substringMatch) 
         {
-            this.card = card; this.distance = distance;
+            this.card = card; this.distance = distance; this.substringMatch = substringMatch;
         }
 
         public int CompareTo(object obj)
         {
             if (obj == null) return 1;
             CardResult otherResult = obj as CardResult;
-            if (otherResult != null)
-                return this.distance.CompareTo(otherResult.distance);
-            else
+            if (otherResult != null) {
+                if (otherResult.substringMatch == substringMatch) {
+                    return this.distance.CompareTo(otherResult.distance);
+                } else {
+                    return otherResult.substringMatch.CompareTo(this.substringMatch);
+                }
+            } else {
                 throw new ArgumentException("Object is not a CardResult");
+            }
         }
     }
 }
